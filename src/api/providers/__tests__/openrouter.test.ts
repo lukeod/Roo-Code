@@ -324,4 +324,32 @@ describe("OpenRouterHandler", () => {
 
 		await expect(handler.completePrompt("test prompt")).rejects.toThrow("Unexpected error")
 	})
+
+	test("getSafeMaxTokens limits max_tokens based on model", () => {
+		const handler = new OpenRouterHandler(mockOptions)
+
+		// Test with a model that has a specific limit
+		expect(handler.getSafeMaxTokens("anthropic/claude-3-opus", 10000)).toBe(4096)
+
+		// Test with a model that doesn't have a specific limit (should use default)
+		expect(handler.getSafeMaxTokens("unknown/model", 10000)).toBe(4096)
+
+		// Test with a requested value lower than the limit
+		expect(handler.getSafeMaxTokens("anthropic/claude-3-opus", 2000)).toBe(2000)
+
+		// Test with the thinking model that has a higher limit
+		expect(handler.getSafeMaxTokens("anthropic/claude-3.7-sonnet:thinking", 100000)).toBe(100000)
+	})
+
+	test("getModelContextWindow returns correct context window size", () => {
+		const handler = new OpenRouterHandler(mockOptions)
+
+		// Test with models that have specific context windows
+		expect(handler.getModelContextWindow("anthropic/claude-3-opus")).toBe(200000)
+		expect(handler.getModelContextWindow("openai/gpt-4")).toBe(8192)
+		expect(handler.getModelContextWindow("openai/gpt-4-turbo")).toBe(128000)
+
+		// Test with a model that doesn't have a specific context window (should use default)
+		expect(handler.getModelContextWindow("unknown/model")).toBe(8192)
+	})
 })
